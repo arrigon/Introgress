@@ -110,10 +110,6 @@ public:
     void loadNetworks(std::string networks_file);   // Load population from outfile (saved as networks of indivs)
     void savePhenotypes(std::string phens_file);    // Save phenopyte to outfile
     void saveNetworks(std::string networks_file);   // Save networks to outfile
-
-
-    // Debug only
-    void spanGametes();                      // produce gametes (debug only)
 };
 
 

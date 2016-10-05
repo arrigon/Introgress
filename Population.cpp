@@ -14,12 +14,15 @@ using namespace std;
 using namespace arma;
 
 
-// Constructor definition
+//// Constructor definition
 void Population::loadParams(int nitr,
                             int nphns,
                             double eps,
                             int n_gams,
                             int nind)
+/* Set general parameters of our population:
+   - convergence checks (n_iterations, n_phens checked, epsilon)
+   - demography (n_indivs and n_gametes / indiv) */
 {
     niter_conv = nitr;            // number of iterations to check convergence
     n_phens = nphns;              // number of phenotypes to check convergence
@@ -29,7 +32,11 @@ void Population::loadParams(int nitr,
 }
 
 
+
+
+//// Initiate parental / hybrid population. TODO: use pointers for that.
 void Population::populateParental(Indiv indinit)
+/* Initiate our population with clones of indinit */
 {
     // Get founder individual
     ind_init = indinit;           // individual used to initiate population
@@ -46,110 +53,43 @@ void Population::populateParental(Indiv indinit)
 }
 
 
-void Population::populateHybrid(vector <Indiv> indsPop1, vector <Indiv> indsPop2)
+void Population::populateHybrid(vector <Indiv> indsPop1,
+                                vector <Indiv> indsPop2)
+/* Initiate our population with F1s (they go into the myIndivs vector),
+   and load the stock of reccurring parents for the backcrosses. */
 {
+
     // Populate population with pop 1
     for(int ind_idx=0; ind_idx<n_indiv; ind_idx++)
     {
-        Indiv ind_tmp = indsPop1[ind_idx];
-        myIndivs.push_back(ind_tmp);
+        mat w1 = indsPop1[ind_idx].getNetwork1();
+        mat w2 = indsPop2[ind_idx].getNetwork1();
+
+        Indiv F1_tmp;
+        F1_tmp.loadParams(w1,
+                          w2,
+                          niter_conv,        // w1 and w2 are declared internally, to use for debug purposes only
+                          n_phens,
+                          epsilon,
+                          mut_rate,
+                          stock_gamete,
+                          phen_opt,
+                          omega);
+
+        myIndivs.push_back(F1_tmp);
         myNames.push_back(ind_idx);
     }
 
     // Load stock of indivs 2 in indovsPop2
     indivsPop2 = indsPop2;
-
 }
 
 
-void Population::savePhenotypes(string phens_file)
-{
-    ofstream myfile;
-    myfile.open (phens_file);
-
-    // initialize variables
-    // myFitnesses.clear(); // make sure we update those fitnesses
-    int ind_stock = myIndivs.size();
-
-    // print infos to cout if needed
-    for(int ind_idx=0; ind_idx<ind_stock; ind_idx++)   // warning: iterate over remaining indvs, so use ind_stock
-    {
-        rowvec ind_phe = myIndivs[ind_idx].getPhen();
-        myfile << ind_phe;
-    }
-
-    myfile.close();
-}
 
 
-void Population::saveNetworks(string networks_file)
-{
-    ofstream myfile;
-    myfile.open (networks_file);
-
-    // initialize variables
-    // myFitnesses.clear(); // make sure we update those fitnesses
-    int ind_stock = myIndivs.size();
-
-    // print w1 to file
-    for(int ind_idx=0; ind_idx<ind_stock; ind_idx++)   // warning: iterate over remaining indvs, so use ind_stock
-    {
-        mat w1 = myIndivs[ind_idx].getNetwork1();
-        rowvec w1_vector = mat2vec(w1);
-        myfile << w1_vector;
-    }
-
-    // print w2 to file
-    for(int ind_idx=0; ind_idx<ind_stock; ind_idx++)   // warning: iterate over remaining indvs, so use ind_stock
-    {
-        mat w2 = myIndivs[ind_idx].getNetwork2();
-        rowvec w2_vector = mat2vec(w2);
-        myfile << w2_vector;
-    }
-    myfile.close();
-}
-
-
-void Population::loadNetworks(string networks_file)
-{
-    // load file
-    mat W;
-    W.load(networks_file);
-
-
-    // get infos about this dataset
-    int n_genes = sqrt(W.n_cols);
-    int n_indiv = W.n_rows / 2;
-
-    cout << "Population::loadNetworks() loading n_indiv = " << n_indiv << endl;
-
-    // populate pop with corresponding individuals
-    for(int ind_idx=0; ind_idx<n_indiv; ind_idx++)   // warning: iterate over remaining indvs, so use ind_stock
-    {
-        // get gene networks of focal individual
-        mat w1 = vec2mat(W.row(ind_idx));
-        mat w2 = vec2mat(W.row(ind_idx + n_indiv));
-
-        // initiate individual with this
-        Indiv ind_init;
-        ind_init.loadParams(w1,
-                            w2,
-                            niter_conv,        // w1 and w2 are declared internally, to use for debug purposes only
-                            n_phens,
-                            epsilon,
-                            mut_rate,
-                            stock_gamete,
-                            phen_opt,
-                            omega);
-
-        // save to myIndivs and myNames
-        myIndivs.push_back(ind_init);
-        myNames.push_back(ind_idx);
-    }
-}
-
-
+//// Individual related functions
 void Population::getFitnesses(int verbose)
+/* compute fitnesses of all myIndivs */
 {
     // Clear existing vector
     myFitnesses.clear();
@@ -171,13 +111,15 @@ void Population::getFitnesses(int verbose)
 }
 
 
-std::vector <Indiv> Population::getAllIndivs()       // output all indivs of pop, as vector
-{
-    return(myIndivs);
-}
-
-
 Indiv Population::getOffspring(int verbose)
+ /* Produce one offspring, according to parent fitnesses
+ WARNING: This function MUST be called through runGenerations():
+    we pass some arguments to the produced offsprings that are
+    explicitly defined during the call of runGenerations().
+
+    Running getOffspring() form scratch might produce unpredictable
+    outputs. Make sure that mut_rate, phen_opt, omega, self_rate and
+    backcross_rate are defined BEFORE running this function */
 {
     // Initiate random samplers
     std::random_device rd;
@@ -381,6 +323,10 @@ Indiv Population::getOffspring(int verbose)
 
 
         // Unite gametes into new offspring, if both gametes are convergent
+        /* Important point: the offsprings are produced with params passed by getOffspring
+        this means that every offspring produced here will have phen_opt / mutation rates, and others
+        updated accordingly. This allows running the runGenerations function with changing paramaters
+        */
         if(parents_ok == 1)
         {
             Indiv ind_offsprg;                                       // initiate Indiv class
@@ -415,6 +361,16 @@ Indiv Population::getOffspring(int verbose)
 }
 
 
+std::vector <Indiv> Population::getAllIndivs()
+/* output all indivs of pop, as vector */
+{
+    return(myIndivs);
+}
+
+
+
+
+//// Simulation related functions
 void Population::runGenerations(int n_generations,
                                 double mu,
                                 arma::rowvec phenopt,
@@ -423,6 +379,7 @@ void Population::runGenerations(int n_generations,
                                 double bckrte,
                                 string distance_file,  // file to report distance to optimal phenotype
                                 int verbose)
+/* Run our population over generations, and under chose dynamics*/
 {
     // Get parameters
     mut_rate = mu;                // mutation rate
@@ -520,3 +477,95 @@ void Population::runGenerations(int n_generations,
     myfile.close();
 }
 
+
+
+
+//// I/O related functions
+void Population::loadNetworks(string networks_file)
+/* load myIndivs' networks from outfile */
+{
+    // load file
+    mat W;
+    W.load(networks_file);
+
+
+    // get infos about this dataset
+    int n_genes = sqrt(W.n_cols);
+    int n_indiv = W.n_rows / 2;
+
+    cout << "Population::loadNetworks() loading n_indiv = " << n_indiv << endl;
+
+    // populate pop with corresponding individuals
+    for(int ind_idx=0; ind_idx<n_indiv; ind_idx++)   // warning: iterate over remaining indvs, so use ind_stock
+    {
+        // get gene networks of focal individual
+        mat w1 = vec2mat(W.row(ind_idx));
+        mat w2 = vec2mat(W.row(ind_idx + n_indiv));
+
+        // initiate individual with this
+        Indiv ind_init;
+        ind_init.loadParams(w1,
+                            w2,
+                            niter_conv,        // w1 and w2 are declared internally, to use for debug purposes only
+                            n_phens,
+                            epsilon,
+                            mut_rate,
+                            stock_gamete,
+                            phen_opt,
+                            omega);
+
+        // save to myIndivs and myNames
+        myIndivs.push_back(ind_init);
+        myNames.push_back(ind_idx);
+    }
+}
+
+
+void Population::savePhenotypes(string phens_file)
+/* Save myIndivs' phenotypes to outfile */
+{
+    ofstream myfile;
+    myfile.open (phens_file);
+
+    // initialize variables
+    // myFitnesses.clear(); // make sure we update those fitnesses
+    int ind_stock = myIndivs.size();
+
+    // print infos to cout if needed
+    for(int ind_idx=0; ind_idx<ind_stock; ind_idx++)   // warning: iterate over remaining indvs, so use ind_stock
+    {
+        rowvec ind_phe = myIndivs[ind_idx].getPhen();
+        myfile << ind_phe;
+    }
+
+    myfile.close();
+}
+
+
+void Population::saveNetworks(string networks_file)
+/* Save myIndivs' networks to outfile */
+{
+    ofstream myfile;
+    myfile.open (networks_file);
+
+    // initialize variables
+    // myFitnesses.clear(); // make sure we update those fitnesses
+    int ind_stock = myIndivs.size();
+
+    // print w1 to file
+    for(int ind_idx=0; ind_idx<ind_stock; ind_idx++)   // warning: iterate over remaining indvs, so use ind_stock
+    {
+        mat w1 = myIndivs[ind_idx].getNetwork1();
+        rowvec w1_vector = mat2vec(w1);
+        myfile << w1_vector;
+    }
+
+    // print w2 to file
+    for(int ind_idx=0; ind_idx<ind_stock; ind_idx++)   // warning: iterate over remaining indvs, so use ind_stock
+    {
+        mat w2 = myIndivs[ind_idx].getNetwork2();
+        rowvec w2_vector = mat2vec(w2);
+        myfile << w2_vector;
+    }
+    myfile.close();
+}

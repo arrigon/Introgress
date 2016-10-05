@@ -21,10 +21,10 @@ int main()
     int niter_conv = 100;               // number of iterations in convergence test
     int n_phens = 25;
     int n_gams = 500;
-    int n_indiv = 100;
-    int n_generations1 = 10;
-    int n_generations2 = 10;
-    int n_generations3 = 10;
+    int n_indiv = 500;
+    int n_generations1 = 100;
+    int n_generations2 = 100;
+    int n_generations3 = 100;
 
     double epsilon = 1e-3;
     double self_rate = 0;
@@ -83,7 +83,7 @@ int main()
                         omega,                   // - with omega as selection intensity
                         self_rate,               // - selfing rate
                         backcross_rate,          // - backcrossing rate
-                        "pop1_dist_to_opt.txt",  // - report distances to phen_opt in outfile
+                        "pop0_dist_to_opt.txt",  // - report distances to phen_opt in outfile
                         1);                      // - verbose mode
 
     pop1.savePhenotypes("pop0.phens.txt");       // save phenotypes
@@ -129,10 +129,14 @@ int main()
 
 
 
-
     //// HYBRIDIZATION PHASE
     // load hybrid population
-    Population pop3 = pop1;
+    Population pop3;
+    pop3.loadParams(niter_conv,
+                    n_phens,
+                    epsilon,
+                    n_gams,
+                    n_indiv);
     pop3.populateHybrid(pop1.getAllIndivs(),
                         pop2.getAllIndivs());
 
@@ -144,7 +148,7 @@ int main()
                         phen_opt,                // - select on phen_opt
                         omega,                   // - with omega as selection intensity
                         self_rate,               // - selfing rate
-                        backcross_rate = .3,          // - backcrossing rate
+                        backcross_rate = .3,     // - backcrossing rate
                         "pop3_dist_to_opt.txt",  // - report distances to phen_opt in outfile
                         1);                      // - verbose mode
 
