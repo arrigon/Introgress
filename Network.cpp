@@ -145,12 +145,15 @@ void Network::convergence()
 }
 
 // Find convergent network
-mat Network::getConvergentNetwork(double networkFillness)
+mat Network::getConvergentNetwork(double netFill)
 /* Start inititial Network, networkFillness [0-1] determines
    the proportion of non-null interactions in the network
    N.B. mutations are *not* applied to null interactions,
    thus preserving the network topology. */
 {
+    // get params
+    networkFillness = netFill;
+
     // Initiate counters
     int n_genes = w.n_rows;
     int conv_ok = 0;
@@ -164,7 +167,7 @@ mat Network::getConvergentNetwork(double networkFillness)
 
         // Get null cells
          mat w_null = randu<mat>(n_genes,n_genes);
-         w.elem( find(w_null > matrixFillness).zeros();
+         w.elem( find(w_null > networkFillness)).zeros();
 
         // Check convergence of ongoing candidate
         conv_ok = getConvg();

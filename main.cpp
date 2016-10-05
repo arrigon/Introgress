@@ -47,7 +47,7 @@ int main()
                     n_phens,
                     epsilon,
                     mut_rate);
-    w = net.getConvergentNetwork(networkFilness = 0.75);
+    w = net.getConvergentNetwork(networkFillness);
 
 
 

@@ -41,6 +41,7 @@ private:
     double epsilon;
     double mut_rate;
     double conv_val;
+    double networkFillness;
     arma::rowvec phen_last;
     int conv_test = -9;
 
@@ -55,7 +56,7 @@ public:
     arma::mat getNetwork();
     void mutate();
     void convergence();
-    arma::mat getConvergentNetwork();
+    arma::mat getConvergentNetwork(double netFill);
 };
 // This is the end of the header guard
 #endif
