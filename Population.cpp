@@ -15,40 +15,26 @@ using namespace arma;
 
 
 // Constructor definition
-void Population::loadParams(Indiv indinit,
-                            Indiv indscnd,
-                            int nitr,
+void Population::loadParams(int nitr,
                             int nphns,
                             double eps,
-                            double mu,
                             int n_gams,
-                            rowvec phenopt,
-                            double omg,
-                            int nind,
-                            double self,
-                            double bckrte)
+                            int nind)
 {
-    ind_init = indinit;           // individual used to initiate population
-    ind_scndprt = indscnd;        // individual used to initiate population
     niter_conv = nitr;            // number of iterations to check convergence
     n_phens = nphns;              // number of phenotypes to check convergence
     epsilon = eps;                // epsilon param to check convergence
-    mut_rate = mu;                // mutation rate
     stock_gamete = n_gams;        // number of available gametes
-    phen_opt = phenopt;           // optimal phenotype, for for fitness computation
-    omega = omg;                  // omega parameter, for fitness computation
-    n_indiv = nind;
-    self_rate = self;
-    backcross_rate = bckrte;
+    n_indiv = nind;               // number iof individuals in population
 }
 
-void Population::newPhenOpt(rowvec phenopt)
-{
-    phen_opt = phenopt;
-}
 
-void Population::populateIni()
+void Population::populateParental(Indiv indinit)
 {
+    // Get founder individual
+    ind_init = indinit;           // individual used to initiate population
+
+    // Populate complete pop with it
     for(int ind_idx=0; ind_idx<n_indiv; ind_idx++)
     {
         myIndivs.push_back(ind_init);
@@ -60,15 +46,20 @@ void Population::populateIni()
 }
 
 
-//void Population::spanGametes()
-//{
-//    int ind_stock = myIndivs.size();
-//    for(int ind_idx=0; ind_idx<ind_stock; ind_idx++)
-//    {
-//    arma::mat w_gamete = myIndivs[ind_idx].getGamete(0);
-//    myGametes.push_back(w_gamete);
-//    }
-//}
+void Population::populateHybrid(vector <Indiv> indsPop1, vector <Indiv> indsPop2)
+{
+    // Populate population with pop 1
+    for(int ind_idx=0; ind_idx<n_indiv; ind_idx++)
+    {
+        Indiv ind_tmp = indsPop1[ind_idx];
+        myIndivs.push_back(ind_tmp);
+        myNames.push_back(ind_idx);
+    }
+
+    // Load stock of indivs 2 in indovsPop2
+    indivsPop2 = indsPop2;
+
+}
 
 
 void Population::savePhenotypes(string phens_file)
@@ -180,12 +171,22 @@ void Population::getFitnesses(int verbose)
 }
 
 
+std::vector <Indiv> Population::getAllIndivs()       // output all indivs of pop, as vector
+{
+    return(myIndivs);
+}
+
+
 Indiv Population::getOffspring(int verbose)
 {
     // Initiate random samplers
     std::random_device rd;
     std::mt19937 gen(rd());
     uniform_real_distribution<> unif_proba(0, 1);
+
+    // Initiate random samplers
+    int n_ind_pop2 = indivsPop2.size();
+    uniform_int_distribution<> unif_ind_pop2(0, n_ind_pop2 - 1);
 
 
     //// Produce offsprings according to fitness
@@ -291,6 +292,11 @@ Indiv Population::getOffspring(int verbose)
         arma::mat w2_gamete;
         if(p2_idx == -1)
         {
+            // Pick an individual randomly
+            int p2_idx_rdm = unif_ind_pop2(gen);
+            Indiv ind_scndprt = indivsPop2[p2_idx_rdm]; // Fetch a second parent from the backcrossing population,
+                                                           // take this guy randomly
+
             w2_gamete = ind_scndprt.getGamete(1);          // Generate gamete from parent 2 (recurrent parent, if backcross), via getGamete() method
                                                            // NB: this parent is a infinite provider of gametes (infinite = 1).
         // if(verbose == 1) cout << "Population::getOffspring getting BACKCROSS gamete = \n" << w2_gamete << endl;
@@ -409,11 +415,27 @@ Indiv Population::getOffspring(int verbose)
 }
 
 
-void Population::runGenerations(int n_generations, int verbose)
+void Population::runGenerations(int n_generations,
+                                double mu,
+                                arma::rowvec phenopt,
+                                double omg,
+                                double self,
+                                double bckrte,
+                                string distance_file,  // file to report distance to optimal phenotype
+                                int verbose)
 {
+    // Get parameters
+    mut_rate = mu;                // mutation rate
+    phen_opt = phenopt;           // optimal phenotype, for for fitness computation
+    omega = omg;                  // omega parameter, for fitness computation
+    self_rate = self;             // selfing rate
+    backcross_rate = bckrte;      // backcrossing rate (by definition, we backcross on population 2)
+
+
     // open report file
     ofstream myfile;
-    myfile.open ("DistToOpt.txt");
+    myfile.open (distance_file);
+
 
     // Loop over all generations to produce
     for(int gen_idx=0; gen_idx<n_generations; gen_idx++)
@@ -497,6 +519,4 @@ void Population::runGenerations(int n_generations, int verbose)
     }
     myfile.close();
 }
-
-
 

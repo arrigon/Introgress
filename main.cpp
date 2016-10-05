@@ -22,8 +22,9 @@ int main()
     int n_phens = 25;
     int n_gams = 500;
     int n_indiv = 100;
-    int n_generations1 = 100;
-    int n_generations2 = 100;
+    int n_generations1 = 10;
+    int n_generations2 = 10;
+    int n_generations3 = 10;
 
     double epsilon = 1e-3;
     double self_rate = 0;
@@ -62,43 +63,93 @@ int main()
     Indiv ind_scnd = ind_init;
 
 
-    // Initiate pop with that guy
+    // Initiate parental pop with that guy
     Population pop1;
-    pop1.loadParams(ind_init,
-                    ind_scnd,
-                    niter_conv,
+    pop1.loadParams(niter_conv,
                     n_phens,
                     epsilon,
-                    mut_rate,
                     n_gams,
-                    phen_opt,
-                    omega,
-                    n_indiv,
-                    self_rate,
-                    backcross_rate);
-    pop1.populateIni();
+                    n_indiv);
+    pop1.populateParental(ind_init);
+
 
 
     // Canalize on first phenotype
-    phen_opt.load("phen_opt_alien.txt");
-    pop1.runGenerations(n_generations1, 1);
-    pop1.savePhenotypes("pop0.phens.txt");
+    phen_opt.load("phen_opt_alien.txt");         // Load phen_opt form outfile
+
+    pop1.runGenerations(n_generations1,          // Run for n_generations1
+                        mut_rate,                // - applying mut_rate
+                        phen_opt,                // - select on phen_opt
+                        omega,                   // - with omega as selection intensity
+                        self_rate,               // - selfing rate
+                        backcross_rate,          // - backcrossing rate
+                        "pop1_dist_to_opt.txt",  // - report distances to phen_opt in outfile
+                        1);                      // - verbose mode
+
+    pop1.savePhenotypes("pop0.phens.txt");       // save phenotypes
+
+
+
 
     // Split in two sub pops
     Population pop2 = pop1;
 
 
-    // Evolve Pop1 on phen 1
-    phen_opt.load("phen_opt_todd.txt");
-    pop1.newPhenOpt(phen_opt);
-    pop1.runGenerations(n_generations2, 1);
-    pop1.savePhenotypes("pop1.phens.txt");
+
+    // Further evolve Pop1 on phen 1
+    phen_opt.load("phen_opt_todd.txt");          // Load phen_opt form outfile
+
+    pop1.runGenerations(n_generations2,          // Run for n_generations2
+                        mut_rate,                // - applying mut_rate
+                        phen_opt,                // - select on phen_opt
+                        omega,                   // - with omega as selection intensity
+                        self_rate,               // - selfing rate
+                        backcross_rate,          // - backcrossing rate
+                        "pop1_dist_to_opt.txt",  // - report distances to phen_opt in outfile
+                        1);                      // - verbose mode
+
+    pop1.savePhenotypes("pop1.phens.txt");       // save phenotypes
+
+
+
 
     // Evolve Pop2 on phen 2
-    phen_opt.load("phen_opt_ghost.txt");
-    pop2.newPhenOpt(phen_opt);
-    pop2.runGenerations(n_generations2, 1);
-    pop2.savePhenotypes("pop2.phens.txt");
+    phen_opt.load("phen_opt_ghost.txt");          // Load phen_opt form outfile
+
+    pop2.runGenerations(n_generations2,          // Run for n_generations2
+                        mut_rate,                // - applying mut_rate
+                        phen_opt,                // - select on phen_opt
+                        omega,                   // - with omega as selection intensity
+                        self_rate,               // - selfing rate
+                        backcross_rate,          // - backcrossing rate
+                        "pop2_dist_to_opt.txt",  // - report distances to phen_opt in outfile
+                        1);                      // - verbose mode
+
+    pop2.savePhenotypes("pop2.phens.txt");       // save phenotypes
+
+
+
+
+    //// HYBRIDIZATION PHASE
+    // load hybrid population
+    Population pop3 = pop1;
+    pop3.populateHybrid(pop1.getAllIndivs(),
+                        pop2.getAllIndivs());
+
+    // Evolve on Phen 2
+    phen_opt.load("phen_opt_ghost.txt");          // Load phen_opt form outfile
+
+    pop3.runGenerations(n_generations3,          // Run for n_generations3
+                        mut_rate = 0,                // - applying mut_rate
+                        phen_opt,                // - select on phen_opt
+                        omega,                   // - with omega as selection intensity
+                        self_rate,               // - selfing rate
+                        backcross_rate = .3,          // - backcrossing rate
+                        "pop3_dist_to_opt.txt",  // - report distances to phen_opt in outfile
+                        1);                      // - verbose mode
+
+    pop3.savePhenotypes("pop3.phens.txt");       // save phenotypes
+
 
 
 

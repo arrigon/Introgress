@@ -43,8 +43,12 @@ private:
     std::vector <arma::mat> myGametes;
     std::vector <double> myFitnesses;
     Indiv ind_init;
-    Indiv ind_scndprt;
     int stock_gamete = -9;
+
+    // Populations
+    std::vector <Indiv> indivsPop1;
+    std::vector <Indiv> indivsPop2;
+
 
     // General params
     // -> pop params
@@ -66,31 +70,50 @@ private:
     double omega;
     double fitvalue = 0;
 
+
     // Functions
 public:
     // Constructor definition
-    void loadParams(Indiv indinit,
-                    Indiv indscnd,
-                    int nitr,
+    void loadParams(int nitr,
                     int nphns,
                     double eps,
-                    double mu,
                     int n_gams,
-                    arma::rowvec phenopt,
-                    double omg,
-                    int nind,
-                    double self,
-                    double bckrte);
+                    int nind);
 
-    void newPhenOpt(arma::rowvec phenopt);
-    void populateIni();
-    void spanGametes();
-    void getFitnesses(int verbose = 0);
-    Indiv getOffspring(int verbose = 0);
-    void runGenerations(int n_generations, int verbose = 0);
-    void savePhenotypes(std::string phens_file);
-    void saveNetworks(std::string networks_file);
-    void loadNetworks(std::string networks_file);
+
+    // Initiate parental / hybrid population. TODO: use pointers for that.
+    void populateParental(Indiv indinit);                   // with one founder individual
+
+    void populateHybrid(std::vector <Indiv> indsPop1,             // with two parental populations
+                        std::vector <Indiv> indsPop2);            // those pops are declared
+                                                            // using vectors of individuals
+
+
+    // Individual related functions
+    void getFitnesses(int verbose = 0);       // compute fitnesses of all individuals
+    Indiv getOffspring(int verbose = 0);      // produce offsprings, us
+    std::vector <Indiv> getAllIndivs();       // output all indivs of pop, as vector
+
+
+    // Simulation related functions
+    void runGenerations(int n_generations,        // Run population for *n_generations*, considering:
+                        double mu,                // mutation rate
+                        arma::rowvec phenopt,     // optimal phenotype
+                        double omg,               // selection pressure (omega)
+                        double self,              // selfing rate
+                        double bckrte,            // backcrossing rate (hybrid pops only)
+                        std::string distance_file,     // report avg. distance to optimal phenotype
+                        int verbose = 0);         // print progress to console
+
+
+    // I/O related functions
+    void loadNetworks(std::string networks_file);   // Load population from outfile (saved as networks of indivs)
+    void savePhenotypes(std::string phens_file);    // Save phenopyte to outfile
+    void saveNetworks(std::string networks_file);   // Save networks to outfile
+
+
+    // Debug only
+    void spanGametes();                      // produce gametes (debug only)
 };
 
 
