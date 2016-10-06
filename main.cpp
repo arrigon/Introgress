@@ -18,21 +18,21 @@ int main()
     // 16 genes: mu = 0.1, omega = 0.8 / 0.5, full matrix, 100iter conv, eps = 1e-3
     arma::arma_rng::set_seed_random(); // TO UNCOMMENT BEFORE PROD change the random seed
     int n_genes = 49;                    // number of genes in network
-    double networkFillness = .95;      // proportion of non-null interactions in the network
+    double networkFillness = .5;      // proportion of non-null interactions in the network
 
     int niter_conv = 100;               // number of iterations in convergence test
     int n_phens = 25;
 
     int n_gams = 500;
     int n_indiv = 100;
-    int n_generations1 = 100;
+    int n_generations1 = 50;
     int n_generations2 = 200;
-    int n_generations3 = 100;
+    int n_generations3 = 30;
 
     double epsilon = 1e-3;
     double self_rate = 0;
     double backcross_rate = 0;
-    double mut_rate = 1;
+    double mut_rate = 0.5;
     double omega = 0.8;
 
     rowvec phen_opt = randu<rowvec>(n_genes);
@@ -142,6 +142,7 @@ int main()
                     n_indiv);
     pop3.populateHybrid(pop1.getAllIndivs(),
                         pop2.getAllIndivs());
+    pop3.saveNetworks("pop3_F1genotypes.txt");
 
     // Evolve on Phen 1, and backcross on Pop2
     phen_opt.load("phen_opt_todd.txt");          // Load phen_opt form outfile
@@ -151,12 +152,12 @@ int main()
                         phen_opt,                // - select on phen_opt
                         omega,                   // - with omega as selection intensity
                         self_rate,               // - selfing rate
-                        backcross_rate = 0.7,     // - backcrossing rate, we backcross on **Pop2**
+                        backcross_rate = 0.95,     // - backcrossing rate, we backcross on **Pop2**
                         "pop3_dist_to_opt.txt",  // - report distances to phen_opt in outfile
                         1);                      // - verbose mode
 
     pop3.savePhenotypes("pop3.phens.txt");       // save phenotypes
-
+    pop3.saveNetworks("pop3_BCgenotypes.txt");
 
 
 

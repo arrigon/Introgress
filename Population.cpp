@@ -58,10 +58,13 @@ void Population::populateHybrid(vector <Indiv> indsPop1,
 /* Initiate our population with F1s (they go into the myIndivs vector),
    and load the stock of reccurring parents for the backcrosses. */
 {
+    // initiate tmp vector
+    vector <Indiv> myInds_tmp;
 
-    // Populate population with pop 1
+    // Populate population1 with indspop1, do the same for for pop2
     for(int ind_idx=0; ind_idx<n_indiv; ind_idx++)
     {
+        // Pop1
         mat w1 = indsPop1[ind_idx].getNetwork1();
         mat w2 = indsPop2[ind_idx].getNetwork1();
 
@@ -78,11 +81,30 @@ void Population::populateHybrid(vector <Indiv> indsPop1,
 
         myIndivs.push_back(F1_tmp);
         myNames.push_back(ind_idx);
+
+
+        // Pop2
+        mat w1b = indsPop2[ind_idx].getNetwork1();
+        mat w2b = indsPop2[ind_idx].getNetwork2();
+
+        Indiv ind_tmp;
+        ind_tmp.loadParams(w1b,
+                           w2b,
+                           niter_conv,        // w1 and w2 are declared internally, to use for debug purposes only
+                           n_phens,
+                           epsilon,
+                           mut_rate,
+                           stock_gamete,
+                           phen_opt,
+                           omega);
+
+        myInds_tmp.push_back(ind_tmp);
     }
 
     // Load stock of indivs 2 in indovsPop2
-    indivsPop2 = indsPop2;
-}
+    indivsPop2.clear();
+    indivsPop2.swap(myInds_tmp);
+    }
 
 
 
