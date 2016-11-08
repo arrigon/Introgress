@@ -67,6 +67,7 @@ void Population::populateHybrid(vector <Indiv> indsPop1,
         // Pop1
         mat w1 = indsPop1[ind_idx].getNetwork1();
         mat w2 = indsPop2[ind_idx].getNetwork1();
+        double mut_rate = 0;
 
         Indiv F1_tmp;
         F1_tmp.loadParams(w1,
@@ -74,7 +75,7 @@ void Population::populateHybrid(vector <Indiv> indsPop1,
                           niter_conv,        // w1 and w2 are declared internally, to use for debug purposes only
                           n_phens,
                           epsilon,
-                          mut_rate,
+                          mut_rate = mut_rate,
                           stock_gamete,
                           phen_opt,
                           omega);
@@ -393,14 +394,15 @@ std::vector <Indiv> Population::getAllIndivs()
 
 
 //// Simulation related functions
-void Population::runGenerations(int n_generations,
-                                double mu,
-                                arma::rowvec phenopt,
-                                double omg,
-                                double self,
-                                double bckrte,
-                                string distance_file,  // file to report distance to optimal phenotype
-                                int verbose)
+double Population::runGenerations(int n_generations,
+                                  double mu,
+                                  arma::rowvec phenopt,
+                                  double omg,
+                                  double self,
+                                  double bckrte,
+                                  string genotypes_file,  // file to report distance to optimal phenotype
+                                  int saveGenotypes,
+                                  int verbose)
 /* Run our population over generations, and under chose dynamics*/
 {
     // Get parameters
@@ -409,11 +411,6 @@ void Population::runGenerations(int n_generations,
     omega = omg;                  // omega parameter, for fitness computation
     self_rate = self;             // selfing rate
     backcross_rate = bckrte;      // backcrossing rate (by definition, we backcross on population 2)
-
-
-    // open report file
-    ofstream myfile;
-    myfile.open (distance_file);
 
 
     // Loop over all generations to produce
@@ -457,46 +454,64 @@ void Population::runGenerations(int n_generations,
             break;
         }
 
+        // Count number of used gametes
+        int gam_used = usedGametes(1);
+
         // Save to myIndivs and myNames
         myIndivs.clear();
         myIndivs.swap(myInds_tmp);
         myNames.clear();
         myNames.swap(myNms_tmp);
 
+
+        // Save to outfile, if needed
+        if(saveGenotypes == 1)
+            {
+            std::ostringstream gen_idx_str;
+            gen_idx_str << gen_idx;
+
+            string name_file = genotypes_file;
+            name_file = name_file + "_gen" + gen_idx_str.str() + "_genotypes.txt";
+            saveNetworks(name_file);
+            }
+
+
+        // Average distance to optimum
+        int n_genes = myIndivs[0].getNetwork1().n_rows;
+        rowvec phen_avg(n_genes, fill::zeros);              // initialize phen_avg
+        double cnt = 0;                                     // initialize number of viable samples
+
+        // loop over all specimens and sum to phen_avg
+        for(int ind_idx=0; ind_idx<n_indiv; ind_idx++)
+        {
+            // get specimen phenotype
+            rowvec phen_last = myIndivs[ind_idx].getPhen();
+            if(phen_last.has_nan() == 0)
+            {
+                phen_avg = phen_avg + phen_last;
+                cnt = cnt + 1;
+            }
+        }
+
+        // divide by number of specimens to get average phenotype
+        rowvec phen_cnt(n_genes);
+        phen_cnt.fill(cnt);
+        phen_avg = phen_avg / phen_cnt;
+
+        // compute distance to phen_opt
+        double delta = sum(abs(phen_avg - phen_opt)) / n_genes;
+
+
         // print infos to screen
         if(verbose == 1)
         {
-            // compute average phenotype
-            int n_genes = myIndivs[0].getNetwork1().n_rows;
-            rowvec phen_avg(n_genes, fill::zeros);              // initialize phen_avg
-            double cnt = 0;                                     // initialize number of viable samples
-
-            // loop over all specimens and sum to phen_avg
-            for(int ind_idx=0; ind_idx<n_indiv; ind_idx++)
-            {
-                // get specimen phenotype
-                rowvec phen_last = myIndivs[ind_idx].getPhen();
-                if(phen_last.has_nan() == 0)
-                {
-                    phen_avg = phen_avg + phen_last;
-                    cnt = cnt + 1;
-                }
-            }
-
-            // divide by number of specimens to get average phenotype
-            rowvec phen_cnt(n_genes);
-            phen_cnt.fill(cnt);
-            phen_avg = phen_avg / phen_cnt;
-
-            // compute distance to phen_opt
-            double delta = sum(abs(phen_avg - phen_opt)) / n_genes;
-
-            // print infos to screen
             cout << "Population::runGeneration: " << gen_idx << " Avg. dist to phen_opt = " << delta << endl;
-            myfile << delta << "\n";
         }
+
+
+        // return distance to average at end of each generation
+        return(delta);
     }
-    myfile.close();
 }
 
 
@@ -591,3 +606,26 @@ void Population::saveNetworks(string networks_file)
     }
     myfile.close();
 }
+
+
+int Population::usedGametes(int verbose)
+/* Count the number of gametes used after a reproduction phase */
+    {
+    // initiate counters
+    int ind_stock = myIndivs.size();
+    int gam_stock = 0;
+
+    // loop over indivs remaining in pop to count the number of remaining gametes
+    for(int ind_idx=0; ind_idx<ind_stock; ind_idx++)
+    {
+        int gam_cnt = myIndivs[ind_idx].getGameteCnt();
+        gam_stock = gam_stock + gam_cnt;
+    }
+
+    // get the number of used gametes
+    int gam_used = (n_indiv * stock_gamete) - gam_stock;
+
+    // print to output and return
+    if(verbose == 1) cout << "Population::usedGametes gam_used = " << gam_used << endl;
+    return(gam_used);
+    }

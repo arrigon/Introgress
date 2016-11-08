@@ -85,6 +85,7 @@ void Network::mutate()
         double mut_event = unif_proba(gen);      // draw random value between 0 and 1
         if(mut_event <= mut_rate)                // apply mutation if mut_event <= mut_rate
         {
+            // cout << "Network::mutate mutation event" << endl;
             rowvec locus = w.row(loc_idx);                              // extract line
             int mut_pos = unif_gene(gen);                               // get position to mutate
             double mut_size = unif_effect(gen);                         // get mutation effect
@@ -145,17 +146,50 @@ void Network::convergence()
 }
 
 // Find convergent network
-mat Network::getConvergentNetwork(double netFill)
-/* Start inititial Network, networkFillness [0-1] determines
-   the proportion of non-null interactions in the network
-   N.B. mutations are *not* applied to null interactions,
-   thus preserving the network topology. */
+mat Network::getConvergentNetwork(double netFill, int gradient)
+/* Start inititial Network,
+   - networkFill [0-1] determines the proportion of non-null interactions in the network
+                       N.B. mutations are *not* applied to null interactions, thus preserving the network topology.
+   - gradient [0 or 1] determines if null interactions are spread randomly in w (gradient = 0)
+                       or if a connectivity gradient is applied (gradient = 1)
+*/
 {
     // get params
-    networkFillness = netFill;
+    networkFillness = netFill;                             // network fillness
+    int n_genes = w.n_rows;                                // number of genes
+    int n_cells = pow(n_genes, 2);                         // number of cells in w
+    int n_nulls = floor(n_cells * (1 - networkFillness));  // number of cells where a zero must be assigned
+
+    // Generate probability gradients of assigning a null value, for each cell of w
+    // Start with probas by rows of w
+    mat probsRows(n_genes, n_genes);
+    for(int gene_idx=0; gene_idx<n_genes; gene_idx++)
+    {
+        double proba = (gene_idx + 1) /(double) n_genes;   // p = 1/w_row
+        rowvec tmp(n_genes);
+        tmp.fill(proba);
+        probsRows.row(gene_idx) = tmp;
+    }
+
+    // tranpose and multiply to get double connecitivity gradient
+    mat probsCols = probsRows.t();
+    mat probsMat = probsRows % probsCols;
+    //cout << "Network::getConvergentNetwork: connectivity gradient\n" << probsMat << endl;
+
+    // convert to std::vector and feed random sampler with it
+    rowvec probsMat_vec = mat2vec(probsMat);          // turn back to std::vector, in order to feed random sampler
+    std::vector<double> myProbs;
+    for(int idx=0; idx<probsMat_vec.n_elem; idx++)
+    {
+        double val = probsMat_vec[idx];
+        myProbs.push_back(val);
+    }
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::discrete_distribution<> rand_int_connect (myProbs.begin(), myProbs.end());
+
 
     // Initiate counters
-    int n_genes = w.n_rows;
     int conv_ok = 0;
     int myConvgs = 0;
 
@@ -165,9 +199,34 @@ mat Network::getConvergentNetwork(double netFill)
         // Initiate random network matrix
         w = randn<mat>(n_genes,n_genes);
 
-        // Get null cells
-         mat w_null = randu<mat>(n_genes,n_genes);
-         w.elem( find(w_null > networkFillness)).zeros();
+        // Assign zeroes in w, on order to decrease the connectivity
+        if(gradient == 1)
+        {
+            // do so according to probability gradients defined earlier
+            rowvec zeroes_idx(n_nulls);
+            int ok_cnt = 0;
+            while(ok_cnt < n_nulls)                    // attribute 0s to w cells, until we reach the amount of null_cells
+            {
+                int idx = rand_int_connect(gen);       // sample a cell index, using the random sampler initiated earlier (~ proba of null cells)
+                uvec check = find(zeroes_idx == idx);  // check if that cell has already been assigned a zero
+                if(check.n_elem == 0)                  // if not, proceed further
+                {
+                    zeroes_idx.at(ok_cnt) = idx;       // save indexes where zero values were assigned
+                    w(idx) = 0;                        // assign 0 in w, at focal cell
+                    ok_cnt = ok_cnt + 1;               // keep track of how much cells were modified this way
+                }
+            }
+        }
+        // cout << "Network::getConvergentNetwork: zeroes_idx " << zeroes_idx << endl;
+
+        if(gradient == 0)
+        {
+        // assign zeroes randomly in w
+        mat w_null = randu<mat>(n_genes,n_genes);
+        w.elem( find(w_null > networkFillness)).zeros();
+        }
+
+
 
         // Check convergence of ongoing candidate
         conv_ok = getConvg();
@@ -186,7 +245,7 @@ mat Network::getConvergentNetwork(double netFill)
     }
 
     // Return outputs
-    cout << "main: found converging network " << myConvgs << "%" << endl;
+    cout << "Network::getConvergentNetwork: found converging network " << myConvgs << "%" << endl;
     return(w);
 }
 

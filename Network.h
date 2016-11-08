@@ -56,7 +56,7 @@ public:
     arma::mat getNetwork();
     void mutate();
     void convergence();
-    arma::mat getConvergentNetwork(double netFill);
+    arma::mat getConvergentNetwork(double netFill, int gradient);
 };
 // This is the end of the header guard
 #endif

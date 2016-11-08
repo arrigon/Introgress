@@ -48,7 +48,7 @@ private:
     // Populations
     std::vector <Indiv> indivsPop1;
     std::vector <Indiv> indivsPop2;
-
+    std::vector <int> nUsedGametes;
 
     // General params
     // -> pop params
@@ -96,15 +96,16 @@ public:
 
 
     // Simulation related functions
-    void runGenerations(int n_generations,        // Run population for *n_generations*, considering:
-                        double mu,                // mutation rate
-                        arma::rowvec phenopt,     // optimal phenotype
-                        double omg,               // selection pressure (omega)
-                        double self,              // selfing rate
-                        double bckrte,            // backcrossing rate (hybrid pops only)
-                        std::string distance_file,     // report avg. distance to optimal phenotype
-                        int verbose = 0);         // print progress to console
-
+    double runGenerations(int n_generations,          // Run population for *n_generations*, considering:
+                          double mu,                  // mutation rate
+                          arma::rowvec phenopt,       // optimal phenotype
+                          double omg,                 // selection pressure (omega)
+                          double self,                // selfing rate
+                          double bckrte,              // backcrossing rate (hybrid pops only)
+                          std::string genotypes_file, // file where to save genotypes
+                          int saveGenotypes = 0,      // save genotypes
+                          int verbose = 0);           // print progress to console
+    int usedGametes(int verbose = 0);   // count number of gametes remaining after all offsrpings were produced
 
     // I/O related functions
     void loadNetworks(std::string networks_file);   // Load population from outfile (saved as networks of indivs)
