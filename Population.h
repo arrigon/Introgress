@@ -96,21 +96,25 @@ public:
 
 
     // Simulation related functions
-    double runGenerations(int n_generations,          // Run population for *n_generations*, considering:
-                          double mu,                  // mutation rate
-                          arma::rowvec phenopt,       // optimal phenotype
-                          double omg,                 // selection pressure (omega)
-                          double self,                // selfing rate
-                          double bckrte,              // backcrossing rate (hybrid pops only)
-                          std::string genotypes_file, // file where to save genotypes
-                          int saveGenotypes = 0,      // save genotypes
-                          int verbose = 0);           // print progress to console
-    int usedGametes(int verbose = 0);   // count number of gametes remaining after all offsrpings were produced
+    double runGenerations(int n_generations,             // Run population for *n_generations*, considering:
+                          double mu,                     // mutation rate
+                          arma::rowvec phenopt,          // optimal phenotype
+                          double omg,                    // selection pressure (omega)
+                          double self,                   // selfing rate
+                          double bckrte,                 // backcrossing rate (hybrid pops only)
+                          std::string outputPath,        // path to outfolder
+                          std::string outputPrefix_file, // file prefix where to save genotypes and gamete counts
+                          int saveGenotypes = 0,         // save genotypes
+                          int save_net_log = 1,          // save genotypes each n generations
+                          int verbose = 0);              // print progress to console
+
+    arma::rowvec leftGametes(int verbose = 0);    // count number of gametes remaining after all offsrpings were produced
 
     // I/O related functions
     void loadNetworks(std::string networks_file);   // Load population from outfile (saved as networks of indivs)
     void savePhenotypes(std::string phens_file);    // Save phenopyte to outfile
     void saveNetworks(std::string networks_file);   // Save networks to outfile
+    void saveGameteCounts(std::string gametes_file);     // Save gamete counts to outfile
 };
 
 

@@ -245,7 +245,7 @@ mat Network::getConvergentNetwork(double netFill, int gradient)
     }
 
     // Return outputs
-    cout << "Network::getConvergentNetwork: found converging network " << myConvgs << "%" << endl;
+    // cout << "Network::getConvergentNetwork: found converging network " << myConvgs << "%" << endl;
     return(w);
 }
 

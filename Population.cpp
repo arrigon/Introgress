@@ -392,7 +392,6 @@ std::vector <Indiv> Population::getAllIndivs()
 
 
 
-
 //// Simulation related functions
 double Population::runGenerations(int n_generations,
                                   double mu,
@@ -400,8 +399,10 @@ double Population::runGenerations(int n_generations,
                                   double omg,
                                   double self,
                                   double bckrte,
-                                  string genotypes_file,  // file to report distance to optimal phenotype
+                                  string outputPath,
+                                  string outputPrefix,  // file prefix where to save genotypes and gamete counts
                                   int saveGenotypes,
+                                  int save_net_log,
                                   int verbose)
 /* Run our population over generations, and under chose dynamics*/
 {
@@ -411,7 +412,7 @@ double Population::runGenerations(int n_generations,
     omega = omg;                  // omega parameter, for fitness computation
     self_rate = self;             // selfing rate
     backcross_rate = bckrte;      // backcrossing rate (by definition, we backcross on population 2)
-
+    rowvec gens_DistsToOpts(n_generations);
 
     // Loop over all generations to produce
     for(int gen_idx=0; gen_idx<n_generations; gen_idx++)
@@ -454,8 +455,20 @@ double Population::runGenerations(int n_generations,
             break;
         }
 
-        // Count number of used gametes
-        int gam_used = usedGametes(1);
+        // Count number of used gametes and save to outfile, if needed
+        if(saveGenotypes == 1)
+        {
+            std::ostringstream gen_idx_str;
+            gen_idx_str << gen_idx;
+
+            string gametes_file = outputPath;
+            gametes_file = gametes_file + "/LeftGametes_generation_" + gen_idx_str.str() + "_" + outputPrefix + ".txt";
+
+            if(gen_idx%save_net_log == 0 | gen_idx == (n_generations - 1))
+            {
+            saveGameteCounts(gametes_file);
+            }
+        }
 
         // Save to myIndivs and myNames
         myIndivs.clear();
@@ -464,17 +477,36 @@ double Population::runGenerations(int n_generations,
         myNames.swap(myNms_tmp);
 
 
-        // Save to outfile, if needed
+        // Save new genotypes to outfile, if needed
         if(saveGenotypes == 1)
-            {
+        {
             std::ostringstream gen_idx_str;
             gen_idx_str << gen_idx;
 
-            string name_file = genotypes_file;
-            name_file = name_file + "_gen" + gen_idx_str.str() + "_genotypes.txt";
-            saveNetworks(name_file);
-            }
+            string genot_file = outputPath;
+            genot_file = genot_file + "/Genotypes_generation_" + gen_idx_str.str() + "_" + outputPrefix + ".txt";
 
+            if(gen_idx%save_net_log == 0 | gen_idx == (n_generations-1))
+            {
+            saveNetworks(genot_file);
+            }
+        }
+
+
+        // Save new phenotypes to outfile, if needed
+        if(saveGenotypes == 1)
+        {
+            std::ostringstream gen_idx_str;
+            gen_idx_str << gen_idx;
+
+            string phenot_file = outputPath;
+            phenot_file = phenot_file + "/Phenotypes_generation_" + gen_idx_str.str() + "_" + outputPrefix + ".txt";
+
+            if(gen_idx%save_net_log == 0 | gen_idx == (n_generations-1))
+            {
+            savePhenotypes(phenot_file);
+            }
+        }
 
         // Average distance to optimum
         int n_genes = myIndivs[0].getNetwork1().n_rows;
@@ -500,18 +532,28 @@ double Population::runGenerations(int n_generations,
 
         // compute distance to phen_opt
         double delta = sum(abs(phen_avg - phen_opt)) / n_genes;
-
+        gens_DistsToOpts[gen_idx] = delta;
 
         // print infos to screen
         if(verbose == 1)
         {
             cout << "Population::runGeneration: " << gen_idx << " Avg. dist to phen_opt = " << delta << endl;
         }
-
-
-        // return distance to average at end of each generation
-        return(delta);
     }
+
+    // save distances, if needed
+    if(saveGenotypes == 1)
+    {
+        string dist_file = outputPath;
+        dist_file = dist_file + "/DistToPhenOpt_" + outputPrefix + ".txt";
+
+        // save to outfile
+        ofstream myfile;
+        myfile.open(dist_file);
+        myfile << gens_DistsToOpts;
+        myfile.close();
+    }
+
 }
 
 
@@ -608,24 +650,43 @@ void Population::saveNetworks(string networks_file)
 }
 
 
-int Population::usedGametes(int verbose)
-/* Count the number of gametes used after a reproduction phase */
-    {
-    // initiate counters
-    int ind_stock = myIndivs.size();
-    int gam_stock = 0;
+void Population::saveGameteCounts(string gametes_file)
+/* Save myIndivs' phenotypes to outfile */
+{
+    // count gametes left
+    rowvec ind_leftGametes = leftGametes(0);
 
-    // loop over indivs remaining in pop to count the number of remaining gametes
+    // save to outfile
+    ofstream myfile;
+    myfile.open (gametes_file);
+    myfile << ind_leftGametes;
+    myfile.close();
+}
+
+rowvec Population::leftGametes(int verbose)
+/* Count the number of gametes left in each individual after a reproduction phase */
+    {
+    // initiate gamete counters
+    rowvec ind_gametesLeft(n_indiv);  // stock per specimen
+    ind_gametesLeft.fill(0);
+    int gam_stock = 0;                // overall stock
+
+    /* loop over indivs remaining in pop to count the number of remaining gametes
+       recall that indivs that have exhausted their gamete stock are removed from myIndivs;
+       this is why ind_gametesLeft is initiated with n_indiv (i.e. the actual population size)
+       and filled with zeroes by default. Then we iterate over the remaining individuals to count
+       gamete numbers. NB those counts are not coming in the order as individuals in the complete pop*/
+    int ind_stock = myIndivs.size();
     for(int ind_idx=0; ind_idx<ind_stock; ind_idx++)
     {
         int gam_cnt = myIndivs[ind_idx].getGameteCnt();
-        gam_stock = gam_stock + gam_cnt;
+        ind_gametesLeft[ind_idx] = gam_cnt;
     }
 
-    // get the number of used gametes
-    int gam_used = (n_indiv * stock_gamete) - gam_stock;
+    // get the ttotal number of used gametes
+    int gam_used = (n_indiv * stock_gamete) - sum(ind_gametesLeft);
 
     // print to output and return
     if(verbose == 1) cout << "Population::usedGametes gam_used = " << gam_used << endl;
-    return(gam_used);
+    return(ind_gametesLeft);
     }
