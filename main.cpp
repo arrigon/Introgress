@@ -2,9 +2,7 @@
 #include "Network.h"
 #include "Indiv.h"
 #include "Population.h"
-// #include <boost/filesystem.hpp>
-
-
+#include <string>
 //#include <iostream>
 //#include <armadillo>
 //#include <random>
@@ -53,7 +51,7 @@ int main(int argc, char *argv[])
         mut_rate = 0.05;              // mutation rate (during phases 1 and 2, set to 0 via hard coding in hybridization phase)
         omega = 0.8;                  // selection coefficient
         mindist = 0.05;               // (used instead of n_generations1, = minimum phenotypic distance to reach before moving to divergence phase)
-        outputPath = "testOutputs/";  // Folder where to save outputs
+        outputPath = "./testOutputs/";  // Folder where to save outputs
         netlog = 10;                  // Interval of generations when to save outputs
     }
 
@@ -86,20 +84,11 @@ int main(int argc, char *argv[])
     }
 
 
-    //// Preparing outfolder
-//    boost::filesystem::path dir(outputPath);
-//
-//    if(!(boost::filesystem::exists(dir))){
-//        if(verboseMain == 1) cout << "Doesn't Exists" << endl;
-//
-//        if (boost::filesystem::create_directory(dir))
-//        {
-//        if(verboseMain == 1) cout << "main: creating " << outputPath << endl;
-//        }
-//    }
-
-
-
+    //// Preparing outfolder (should use boost)
+    string command = "mkdir -p ";
+    command = command + outputPath;
+    const char *cmd = command.c_str();
+    system(cmd);
 
 
     ///////////////////////
@@ -157,7 +146,7 @@ int main(int argc, char *argv[])
                         0,                          // - NO BACKCROSSING IN PARENTAL POPS
                         outputPath,                 // - outfiles path
                         "pop0",                     // - outfiles prefix
-                        0,                          // - save genotypes to outfile (0 = F, 1 = T)
+                        0,                          // - NOT SAVING GENOTYPES IN CANALISATION PHASE
                         netlog,                     // - save every netlog generations
                         verboseRunGenerations);     // - verbose mode
 
