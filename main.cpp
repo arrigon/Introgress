@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
     arma::arma_rng::set_seed_random(); // TO UNCOMMENT BEFORE PROD change the random seed
 
     //DEBUG SWITCHES ///////
-    int debugMode = 1;     // WARNING: debugMode = 0 for PROD !!!
+    int debugMode = 0;     // WARNING: debugMode = 0 for PROD !!!
     int verboseMain = 0;             // if main must be verbose or not
     int verboseRunGenerations = 0;   // if main must be verbose or not
     ////////////////////////
