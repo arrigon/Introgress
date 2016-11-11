@@ -125,7 +125,7 @@ double Indiv::getFitn()
 }
 
 // Produce viable gamete
-mat Indiv::getGamete(int infinite)
+mat Indiv::getGamete(int infinite, int byrows)
 {
     // cout << "Indiv::getGamete():" << stock_gamete << endl;
 
@@ -144,23 +144,52 @@ mat Indiv::getGamete(int infinite)
     mat w2_rec = w2;
     for(int loc_idx=0; loc_idx<n_genes; loc_idx++)
     {
+        bool recomb_event = binom_proba(gen);      // draw random 0 or 1, with 0.5 of success chance
+
+        if(byrows == 1) // if we recombine loci by rows
+        {
+
+        // prepare loci
         rowvec locus1;
         rowvec locus2;
 
-        bool recomb_event = binom_proba(gen);      // draw random 0 or 1, with 0.5 of success chance
-        if(recomb_event > 0)                       // apply recombination if mut_event > 0
-        {
-            locus1 = w2.row(loc_idx);                              // get locus 1 from w2, and vice-versa
-            locus2 = w1.row(loc_idx);                              //
-        }
-        else
-        {
-            locus1 = w1.row(loc_idx);                              // get locus 1 from w1, and vice-versa
-            locus2 = w2.row(loc_idx);                              //
-        }
+        // cout << "Indiv::getGamete(): recombByRows = " << byrows << endl;
+            if(recomb_event > 0)                       // apply recombination if mut_event > 0
+            {
+                locus1 = w2.row(loc_idx);                              // get locus 1 from w2, and vice-versa
+                locus2 = w1.row(loc_idx);                              //
+            }
+            else
+            {
+                locus1 = w1.row(loc_idx);                              // get locus 1 from w1, and vice-versa
+                locus2 = w2.row(loc_idx);                              //
+            }
 
-        w1_rec.row(loc_idx) = locus1;                                     // build recombined matrices
-        w2_rec.row(loc_idx) = locus2;
+            w1_rec.row(loc_idx) = locus1;                                     // build recombined matrices
+            w2_rec.row(loc_idx) = locus2;
+        }
+        else            // if we recombine loci by columns
+        {
+
+        // prepare loci
+        colvec locus1;
+        colvec locus2;
+
+        // cout << "Indiv::getGamete(): recombByRows = " << byrows << endl;
+            if(recomb_event > 0)                      // apply recombination if mut_event > 0
+            {
+                locus1 = w2.col(loc_idx);                              // get locus 1 from w2, and vice-versa
+                locus2 = w1.col(loc_idx);                              //
+            }
+            else
+            {
+                locus1 = w1.col(loc_idx);                              // get locus 1 from w1, and vice-versa
+                locus2 = w2.col(loc_idx);                              //
+            }
+
+            w1_rec.col(loc_idx) = locus1;                                     // build recombined matrices
+            w2_rec.col(loc_idx) = locus2;
+        }
     }
 
     // return results, decide which gamete must go

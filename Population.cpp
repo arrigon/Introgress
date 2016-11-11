@@ -134,7 +134,7 @@ void Population::getFitnesses(int verbose)
 }
 
 
-Indiv Population::getOffspring(int verbose)
+Indiv Population::getOffspring(int verbose, int recombByRows)
  /* Produce one offspring, according to parent fitnesses
  WARNING: This function MUST be called through runGenerations():
     we pass some arguments to the produced offsprings that are
@@ -253,7 +253,7 @@ Indiv Population::getOffspring(int verbose)
 
 
         // Get gametes w1_gamete and w2_gamete
-        arma::mat w1_gamete = myIndivs[p1_idx].getGamete(0);         // Generate gamete from parent 1, via getGamete() method
+        arma::mat w1_gamete = myIndivs[p1_idx].getGamete(0, recombByRows);         // Generate gamete from parent 1, via getGamete() method
         arma::mat w2_gamete;
         if(p2_idx == -1)
         {
@@ -262,13 +262,13 @@ Indiv Population::getOffspring(int verbose)
             Indiv ind_scndprt = indivsPop2[p2_idx_rdm]; // Fetch a second parent from the backcrossing population,
                                                            // take this guy randomly
 
-            w2_gamete = ind_scndprt.getGamete(1);          // Generate gamete from parent 2 (recurrent parent, if backcross), via getGamete() method
-                                                           // NB: this parent is a infinite provider of gametes (infinite = 1).
+            w2_gamete = ind_scndprt.getGamete(1, recombByRows);   // Generate gamete from parent 2 (recurrent parent, if backcross), via getGamete() method
+                                                                  // NB: this parent is a infinite provider of gametes (infinite = 1).
         // if(verbose == 1) cout << "Population::getOffspring getting BACKCROSS gamete = \n" << w2_gamete << endl;
         }
         else
         {
-            w2_gamete = myIndivs[p2_idx].getGamete(0);     // Generate gamete from parent 2, via getGamete() method
+            w2_gamete = myIndivs[p2_idx].getGamete(0, recombByRows);     // Generate gamete from parent 2, via getGamete() method
         }
 
 
@@ -403,7 +403,8 @@ double Population::runGenerations(int n_generations,
                                   string outputPrefix,  // file prefix where to save genotypes and gamete counts
                                   int saveGenotypes,
                                   int save_net_log,
-                                  int verbose)
+                                  int verbose,
+                                  int recombByRows)
 /* Run our population over generations, and under chose dynamics*/
 {
     // Get parameters
@@ -429,7 +430,7 @@ double Population::runGenerations(int n_generations,
         for(int ind_idx=0; ind_idx<n_indiv; ind_idx++)
         {
             // produce offspring
-            Indiv ind_tmp = getOffspring(0);
+            Indiv ind_tmp = getOffspring(0, recombByRows);
             // cout << "Population::runGeneration: ind_tmp.getNetwork1() =\n" << ind_tmp.getNetwork1() << endl;
 
             // check it was produced correctly

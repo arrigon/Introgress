@@ -78,7 +78,7 @@ public:
     int getGameteCnt();
     arma::rowvec getPhen();
     double getFitn();
-    arma::mat getGamete(int infinite);
+    arma::mat getGamete(int infinite, int byrows = 1);
 };
 
 // This is the end of the header guard

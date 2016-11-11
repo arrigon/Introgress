@@ -90,9 +90,9 @@ public:
 
 
     // Individual related functions
-    void getFitnesses(int verbose = 0);       // compute fitnesses of all individuals
-    Indiv getOffspring(int verbose = 0);      // produce offsprings, us
-    std::vector <Indiv> getAllIndivs();       // output all indivs of pop, as vector
+    void getFitnesses(int verbose = 0);                         // compute fitnesses of all individuals
+    Indiv getOffspring(int verbose = 0, int recombByRows = 0);  // produce offsprings, us
+    std::vector <Indiv> getAllIndivs();                         // output all indivs of pop, as vector
 
 
     // Simulation related functions
@@ -106,7 +106,8 @@ public:
                           std::string outputPrefix_file, // file prefix where to save genotypes and gamete counts
                           int saveGenotypes = 0,         // save genotypes
                           int save_net_log = 1,          // save genotypes each n generations
-                          int verbose = 0);              // print progress to console
+                          int verbose = 0,
+                          int recombByRows = 0);         // print progress to console
 
     arma::rowvec leftGametes(int verbose = 0);    // count number of gametes remaining after all offsrpings were produced
 

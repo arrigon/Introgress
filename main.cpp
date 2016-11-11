@@ -24,8 +24,8 @@ int main(int argc, char *argv[])
 
 
     //// Initiate variables
-    int n_genes, niter_conv, n_phens, n_gams, n_indiv, n_generations1, n_generations2, n_generations3, connectGradient, netlog;                 // number of genes in network
-    double networkFillness, epsilon, self_rate, backcross_rate, mut_rate, omega, mindist;      // proportion of non-null interactions in the network
+    int n_genes, niter_conv, n_phens, n_gams, n_indiv, n_generations1, n_generations2, n_generations3, connectGradient, netlog, recombByRows;
+    double networkFillness, epsilon, self_rate, backcross_rate, mut_rate, omega, mindist;
     string popname, outputPath;
 
     // initiate variables DEBUG MODE ONLY
@@ -41,6 +41,7 @@ int main(int argc, char *argv[])
 
         n_gams = 500;                 // nb of gametes available per individual
         n_indiv = 100;                // nb of individuals per population
+        recombByRows = 1;             // Recombination style, either by rows (1) or by columns (0)
 
         n_generations1 = 10;          // nb of generations in training phase
         n_generations2 = 10;         // nb of generations in divergence phase
@@ -69,6 +70,7 @@ int main(int argc, char *argv[])
 
         n_gams = atoi(argv[5]);                 // nb of gametes available per individual
         n_indiv = atoi(argv[6]);                // nb of individuals per population
+        recombByRows = atoi(argv[17]);          // Recombination style, either by rows (1) or by columns (0)
 
         n_generations1 = atoi(argv[7]);         // nb of generations in training phase
         n_generations2 = atoi(argv[8]);         // nb of generations in divergence phase
@@ -89,6 +91,40 @@ int main(int argc, char *argv[])
     command = command + outputPath;
     const char *cmd = command.c_str();
     system(cmd);
+
+
+
+
+    //// Saving params to logfile
+    string log_file = outputPath;
+    log_file = outputPath + "/UsedParams_logfile.txt";
+
+    // save to outfile
+    ofstream myfile;
+    myfile.open(log_file);
+    myfile << "n_genes = " << n_genes << endl;
+    myfile << "networkFillness = " << networkFillness << endl;
+    myfile << "connectGradient = " << connectGradient << endl;
+    myfile << "niter_conv = " << niter_conv << endl;
+    myfile << "n_phens = " << n_phens << endl;
+    myfile << "epsilon = " << epsilon << endl;
+    myfile << "n_gams = " << n_gams << endl;
+    myfile << "n_indiv = " << n_indiv << endl;
+    myfile << "recombByRows = " << recombByRows << endl;
+    myfile << "n_generations1 = " << n_generations1 << endl;
+    myfile << "n_generations2 = " << n_generations2 << endl;
+    myfile << "n_generations3 = " << n_generations3 << endl;
+    myfile << "self_rate = " << self_rate << endl;
+    myfile << "backcross_rate = " << backcross_rate << endl;
+    myfile << "mut_rate = " << mut_rate << endl;
+    myfile << "omega = " << omega << endl;
+    myfile << "mindist = " << mindist << endl;
+    myfile << "outputPath = " << outputPath << endl;
+    myfile << "netlog = " << netlog << endl;
+    myfile.close();
+
+
+
 
 
     ///////////////////////
@@ -148,8 +184,8 @@ int main(int argc, char *argv[])
                         "pop0",                     // - outfiles prefix
                         0,                          // - NOT SAVING GENOTYPES IN CANALISATION PHASE
                         netlog,                     // - save every netlog generations
-                        verboseRunGenerations);     // - verbose mode
-
+                        verboseRunGenerations,      // - verbose mode
+                        recombByRows);              // - recombination mode
 
 
 
@@ -181,7 +217,8 @@ int main(int argc, char *argv[])
                         "pop1",                     // - outfiles prefix
                         1,                          // - save genotypes to outfile (0 = F, 1 = T)
                         netlog,                     // - save every netlog generations
-                        verboseRunGenerations);     // - verbose mode
+                        verboseRunGenerations,      // - verbose mode
+                        recombByRows);              // - recombination mode
 
 
 
@@ -203,7 +240,8 @@ int main(int argc, char *argv[])
                         "pop2",                     // - outfiles prefix
                         1,                          // - save genotypes to outfile (0 = F, 1 = T)
                         netlog,                     // - save every netlog generations
-                        verboseRunGenerations);     // - verbose mode
+                        verboseRunGenerations,      // - verbose mode
+                        recombByRows);              // - recombination mode
 
 
 
@@ -241,10 +279,8 @@ int main(int argc, char *argv[])
                         "pop3",                     // - outfiles prefix
                         1,                          // - save genotypes to outfile (0 = F, 1 = T)
                         1,                          // - SAVE EVERY GENERATION FOR HYBRID POP
-                        verboseRunGenerations);     // - verbose mode
-
-
-
+                        verboseRunGenerations,      // - verbose mode
+                        recombByRows);              // - recombination mode
 
 
     // end of main
