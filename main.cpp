@@ -31,13 +31,17 @@ int main(int argc, char *argv[])
     // initiate variables DEBUG MODE ONLY
     if(debugMode == 1)
     {
-        n_genes = 49;                 // number of genes in network
-        networkFillness = .5;      // proportion of non-null interactions in the network
+        n_genes = 49;                  // number of genes in network
+        networkFillness = .5;         // proportion of non-null interactions in the network
         connectGradient = 1;          // set a connectivity gradient in the gene network
+                                      // gradient = 0 : no gradient
+                                      // gradient = 1 : gradient on rows only
+                                      // gradient = 2 : gradient on columns only
+                                      // gradient = 3 : gradient on rows AND columns
 
         niter_conv = 100;             // nb of iterations in convergence test
         n_phens = 25;                 // nb of phenotypes we keep in convergence tests
-        epsilon = 1e-5;            // convergence criterion
+        epsilon = 1e-5;               // convergence criterion
 
         n_gams = 500;                 // nb of gametes available per individual
         n_indiv = 100;                // nb of individuals per population
@@ -63,6 +67,10 @@ int main(int argc, char *argv[])
         n_genes = atoi(argv[1]);                // number of genes in network
         networkFillness = atof(argv[2]);        // proportion of non-null interactions in the network
         connectGradient = 1;                    // set a connectivity gradient in the gene network
+                                                // gradient = 0 : no gradient
+                                                // gradient = 1 : gradient on rows only
+                                                // gradient = 2 : gradient on columns only
+                                                // gradient = 3 : gradient on rows AND columns
 
         niter_conv = atoi(argv[3]);             // nb of iterations in convergence test
         n_phens = atoi(argv[4]);                // nb of phenotypes we keep in convergence tests

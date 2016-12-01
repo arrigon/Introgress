@@ -150,8 +150,11 @@ mat Network::getConvergentNetwork(double netFill, int gradient)
 /* Start inititial Network,
    - networkFill [0-1] determines the proportion of non-null interactions in the network
                        N.B. mutations are *not* applied to null interactions, thus preserving the network topology.
-   - gradient [0 or 1] determines if null interactions are spread randomly in w (gradient = 0)
-                       or if a connectivity gradient is applied (gradient = 1)
+   - gradient [0 1, 2 or 3] determines if null interactions are spread randomly in w (gradient = 0)
+                       or if one of the following connectivity gradients is applied :
+                       gradient = 1 : gradient on rows only
+                       gradient = 2 : gradient on columns only
+                       gradient = 3 : gradient on rows AND columns
 */
 {
     // get params
@@ -171,10 +174,29 @@ mat Network::getConvergentNetwork(double netFill, int gradient)
         probsRows.row(gene_idx) = tmp;
     }
 
-    // tranpose and multiply to get double connecitivity gradient
+    // set connectivity gradients according to user-defined params
     mat probsCols = probsRows.t();
-    mat probsMat = probsRows % probsCols;
-    //cout << "Network::getConvergentNetwork: connectivity gradient\n" << probsMat << endl;
+    mat probsMat;
+
+    // gradient in lines
+    if(gradient == 1)
+    {
+        probsMat = probsRows;
+    }
+
+    // gradient in columns
+    if(gradient == 2)
+    {
+        probsMat = probsCols;
+    }
+
+    // double gradient : multiply probsRows by ProbsCols
+    if(gradient == 3)
+    {
+        probsMat = probsRows % probsCols;
+    }
+
+    // cout << "Network::getConvergentNetwork: connectivity gradient\n" << probsMat << endl;
 
     // convert to std::vector and feed random sampler with it
     rowvec probsMat_vec = mat2vec(probsMat);          // turn back to std::vector, in order to feed random sampler
@@ -200,7 +222,7 @@ mat Network::getConvergentNetwork(double netFill, int gradient)
         w = randn<mat>(n_genes,n_genes);
 
         // Assign zeroes in w, on order to decrease the connectivity
-        if(gradient == 1)
+        if(gradient > 0)
         {
             // do so according to probability gradients defined earlier
             rowvec zeroes_idx(n_nulls);
